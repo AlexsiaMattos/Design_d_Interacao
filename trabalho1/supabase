@@ -1,0 +1,82 @@
+
+
+OPÇÃO 2:
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Novo registro</title>
+</head>
+<body>
+  <form id="form-registro">
+    <label for="dados">Dados do registro (JSON)</label>
+    <textarea id="dados" rows="8" required>{
+  "coluna_1": "valor",
+  "coluna_2": "outro valor"
+}</textarea>
+
+    <button type="submit">Salvar</button>
+    <p id="mensagem" role="status"></p>
+  </form>
+
+  <script>
+    const API_URL = "https://jugxgkcyfjkptovkonhe.supabase.co";
+    const API_KEY = "sb_publishable_YlFQfsOYWzLZXWLfgC1ZjQ_9HQr626q";
+    const TABELA = "trab_designIntegracao";
+
+    const form = document.querySelector("#form-registro");
+    const mensagem = document.querySelector("#mensagem");
+    const botao = form.querySelector("button");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      mensagem.textContent = "";
+
+      let registro;
+      try {
+        registro = JSON.parse(document.querySelector("#dados").value);
+
+        if (!registro || Array.isArray(registro) || typeof registro !== "object") {
+          throw new Error("Informe um objeto JSON.");
+        }
+      } catch (error) {
+        mensagem.textContent = `JSON inválido: ${error.message}`;
+        return;
+      }
+
+      botao.disabled = true;
+
+      try {
+        const resposta = await fetch(
+          `${API_URL}/rest/v1/${encodeURIComponent(TABELA)}`,
+          {
+            method: "POST",
+            headers: {
+              "apikey": API_KEY,
+              "Authorization": `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=representation"
+            },
+            body: JSON.stringify(registro)
+          }
+        );
+
+        const corpo = await resposta.text();
+
+        if (!resposta.ok) {
+          throw new Error(corpo || `HTTP ${resposta.status}`);
+        }
+
+        mensagem.textContent = `Registro inserido. ${corpo}`;
+        form.reset();
+      } catch (error) {
+        mensagem.textContent = `Falha ao inserir: ${error.message}`;
+      } finally {
+        botao.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
